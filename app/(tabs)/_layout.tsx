@@ -1,35 +1,39 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+const TabLayout = () => {
+  const insets = useSafeAreaInsets();
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+    <Tabs screenOptions={{ 
+      headerShown: false,
+      tabBarStyle: {
+        backgroundColor: "#000000",
+        borderTopColor: "#333333",
+        paddingBottom: insets.bottom,
+        height: 60 + insets.bottom,
+      },
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: "600"
+      }
+    }}>
+      <Tabs.Screen 
+        name="index" 
+        options={{ 
+          title: "Camera",
+          tabBarIcon: () => <Ionicons name="camera-outline" color="gray" size={28} />
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="library"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Library",
+          tabBarIcon: () => <Ionicons name="book-outline" color="gray" size={28} />
         }}
       />
     </Tabs>
   );
 }
+
+export default TabLayout;
