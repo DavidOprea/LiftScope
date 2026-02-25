@@ -1,3 +1,5 @@
+import { retrieveData, storeData } from '@/components/async-storage';
+
 import { CameraType, CameraView, FlashMode, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -7,7 +9,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 
-// --- ROBUST BASE64 DECODER ---
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 const labels = [
   "Bicep Curl Machine",
@@ -25,6 +26,7 @@ const labels = [
   "Smith Machine"
 ];
 
+// Base64 decoding function
 function decodeBase64(input: string) {
   const str = input.replace(/=+$/, '');
   let output = '';
@@ -37,7 +39,6 @@ function decodeBase64(input: string) {
   for (let i = 0; i < len; i++) bytes[i] = output.charCodeAt(i);
   return bytes;
 }
-// ---------------------------------------------------
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -45,7 +46,6 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [modelState, setModelState] = useState('not-started');
   
-  // 📸 NEW: State to hold the captured image for preview
   const [lastPhotoURI, setLastPhotoURI] = useState<string | null>(null);
   const [predictionLabel, setPredictionLabel] = useState<string>('');
   
@@ -138,13 +138,22 @@ export default function CameraScreen() {
         // Just multiply by 100 for the UI
         const confidence = maxScore * 100; 
         const prediction = labels[maxIndex];
-        
-        setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%)`);
 
-        router.push({
-          pathname: "/machine-info",
-          params: { id: prediction }
-        });
+        if (confidence > 50) {
+          setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%)`);
+          const data = await retrieveData(prediction);
+          if (data === null) {
+            await storeData(prediction, "true");
+            setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉`);
+            console.log('Found new machine, storing in AsyncStorage: ', prediction);
+          }
+          router.push({
+            pathname: "/machine-info",
+            params: { id: prediction }
+          });
+        } else {
+          setPredictionLabel(`Uncertain Prediction (${confidence.toFixed(2)}%)`);
+        }
       }
     } catch (error: any) {
       console.error('❌ Error:', error);

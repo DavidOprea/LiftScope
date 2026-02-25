@@ -1,6 +1,8 @@
+import { retrieveData } from "@/components/async-storage";
+
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -9,6 +11,22 @@ const Library = () => {
   const router = useRouter();
   const [searchVal, setSearchVal] = useState("");
   const [filteredMachineData, setFilteredMachineData] = useState(machineData)
+  const [unlockedMachines, setUnlockedMachines] = useState<{ [key: string]: boolean }>({});
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUnlockedMachines = async () => {
+        const unlocked : { [key: string]: boolean } = {};
+        for (const machine of machineData) {
+          const isUnlocked = await retrieveData(machine.id);
+          console.log(`Machine ${machine.id} unlocked: `, isUnlocked);
+          unlocked[machine.id] = isUnlocked !== null ? true : false;
+        }
+        setUnlockedMachines(unlocked);
+      };
+      fetchUnlockedMachines();
+    }, [])
+  );
 
   const handleMachineClick = (machineId: string) => {
     router.push({
@@ -52,16 +70,26 @@ const Library = () => {
         <FlatList
           data={filteredMachineData}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({item}) => 
-          (
-            <TouchableOpacity onPress={() => handleMachineClick(item.id)} >
-              <LinearGradient
-                colors={['#ffffff', '#888888', '#000000']}
-                style={styles.listContainer}
-              >
-                <Text style={styles.text} numberOfLines={1}>{item.id}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+          renderItem={({item}) => (
+            (unlockedMachines[item.id]) ? (
+              <TouchableOpacity onPress={() => handleMachineClick(item.id)} >
+                <LinearGradient
+                  colors={['#ffffff', '#888888', '#000000']}
+                  style={styles.listContainer}
+                >
+                  <Text style={styles.text} numberOfLines={1}>{item.id}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity disabled = {true} style={{ opacity: 0.5 }} >
+                <LinearGradient
+                  colors={['#ffffff', '#888888', '#000000']}
+                  style={styles.listContainer}
+                >
+                  <Text style={styles.text}>???</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )
           )
           }
         />

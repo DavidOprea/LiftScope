@@ -1,7 +1,9 @@
+import { useEventListener } from "expo";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Dimensions, FlatList, Image, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { MACHINES } from "../data/machines";
 
@@ -12,10 +14,16 @@ const MachineInfo = () => {
   const machine = MACHINES.find(m => m.id === id);
   const imageSource = machine?.image_loc;
   const videoSource = machine?.video_loc;
-  const player = useVideoPlayer(videoSource, (player) => {
+  const player = useVideoPlayer(videoSource || "null", (player) => {
       player.loop = true;
       player.play();
   });
+  const [isVideoReady, setIsVideoReady] = useState(imageSource ? true : false);
+  useEventListener(player, 'statusChange', ({ status }) => {
+    if (status == 'readyToPlay' || status == 'error') {
+      setIsVideoReady(true);
+    }
+  })
 
   return (
     <SafeAreaProvider>
@@ -29,6 +37,11 @@ const MachineInfo = () => {
           player={player}
           style={styles.video}
         />}
+        {!isVideoReady && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#ffffff" />
+          </View>
+        )}
         {imageSource && <Image 
           source={imageSource} 
           style={styles.image} 
@@ -65,8 +78,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#8d8d8d",
   },
   text: {
-    fontFamily: "inter",
-    fontWeight: 600,
+    fontWeight: 500,
     marginBottom: 10
   },
   title: {
@@ -85,6 +97,7 @@ const styles = StyleSheet.create({
     fontWeight: 600,
     backgroundColor: "#8d8d8d",
     borderRadius: 10,
+    borderWidth: 3,
     color: "#ffffff",
     padding: 10,
     width: '95%'
@@ -98,6 +111,12 @@ const styles = StyleSheet.create({
     width: '95%',
     height: height * 0.3,
     marginBottom: 10
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   }
 });
 
