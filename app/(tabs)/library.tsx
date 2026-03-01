@@ -19,7 +19,6 @@ const Library = () => {
         const unlocked : { [key: string]: boolean } = {};
         for (const machine of machineData) {
           const isUnlocked = await retrieveData(machine.id);
-          console.log(`Machine ${machine.id} unlocked: `, isUnlocked);
           unlocked[machine.id] = isUnlocked !== null ? true : false;
         }
         setUnlockedMachines(unlocked);

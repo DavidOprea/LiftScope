@@ -8,6 +8,8 @@ import * as jpeg from 'jpeg-js';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 const labels = [
@@ -48,6 +50,9 @@ export default function CameraScreen() {
   
   const [lastPhotoURI, setLastPhotoURI] = useState<string | null>(null);
   const [predictionLabel, setPredictionLabel] = useState<string>('');
+
+  const [zoom, setZoom] = useState(0);
+  const savedScale = useSharedValue(0);
   
   const cameraRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
@@ -62,6 +67,17 @@ export default function CameraScreen() {
       setModelState('loaded');
     }
   }, [modelAsset.state]);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event : any) => {
+      const newZoom = savedScale.value + (event.scale - 1) * 0.5; 
+      const clampedZoom = Math.max(0, Math.min(1, newZoom));
+      runOnJS(setZoom)(clampedZoom);
+    })
+    .onEnd((event : any) => {
+      const finalZoom = savedScale.value + (event.scale - 1) * 0.5;
+      savedScale.value = Math.max(0, Math.min(1, finalZoom));
+    });
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
@@ -174,34 +190,39 @@ export default function CameraScreen() {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        ref={cameraRef}
-        style={styles.camera}
-        facing={facing}
-        flash={flash}
-        mode="picture"
-      >
-        <View style={styles.overlay}>
-            
-            {/* 🖼️ DEBUG PREVIEW BOX 🖼️ */}
-            {lastPhotoURI && (
-                <View style={styles.previewBox}>
-                    <Text style={styles.previewTitle}>Captured Image:</Text>
-                    <Image source={{ uri: lastPhotoURI }} style={styles.previewImage} />
-                    <Text style={styles.previewResult}>{predictionLabel}</Text>
-                    <TouchableOpacity onPress={() => setLastPhotoURI(null)} style={styles.closeBtn}>
-                        <Text style={styles.closeText}>Close</Text>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureDetector gesture={pinchGesture}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing={facing}
+            flash={flash}
+            mode="picture"
+            zoom={zoom}
+          >
+            <View style={styles.overlay}>
+                
+                {/* 🖼️ DEBUG PREVIEW BOX 🖼️ */}
+                {lastPhotoURI && (
+                    <View style={styles.previewBox}>
+                        <Text style={styles.previewTitle}>Captured Image:</Text>
+                        <Image source={{ uri: lastPhotoURI }} style={styles.previewImage} />
+                        <Text style={styles.previewResult}>{predictionLabel}</Text>
+                        <TouchableOpacity onPress={() => setLastPhotoURI(null)} style={styles.closeBtn}>
+                            <Text style={styles.closeText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <View style={styles.controls}>
+                    <TouchableOpacity onPress={takePicture} style={styles.captureBtn}>
+                        <View style={styles.captureInner} />
                     </TouchableOpacity>
                 </View>
-            )}
-
-            <View style={styles.controls}>
-                <TouchableOpacity onPress={takePicture} style={styles.captureBtn}>
-                    <View style={styles.captureInner} />
-                </TouchableOpacity>
             </View>
-        </View>
-      </CameraView>
+          </CameraView>
+        </GestureDetector>
+      </GestureHandlerRootView>
     </View>
   );
 }

@@ -14,7 +14,6 @@ Seated Cable Rows
 Seated Dip Machine
 Shoulder Press Machine
 smith machine
-Finished writing!
 */
 
 export const MACHINES = [
