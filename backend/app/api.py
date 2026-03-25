@@ -5,9 +5,10 @@ from torchvision import transforms
 from PIL import Image
 import torch
 import pathlib
-import uuid
 import platform
+import io
 
+# 1. Dynamic Pathing
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 MODEL_PATH = BASE_DIR / "purdue_gym_model.pkl"
 
@@ -21,24 +22,37 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# 1. The Linux -> Windows Path Hack
-temp = None
-if platform.system() == 'Windows':
+# 2. Environment-Aware Path Hack
+# Only applies the Windows hack if it detects you are running locally on your laptop.
+# Render's Linux servers will safely ignore this.
+is_windows = platform.system() == 'Windows'
+if is_windows:
     temp = pathlib.PosixPath
     pathlib.PosixPath = pathlib.WindowsPath
 
+# 3. Robust Model Loading with Diagnostics
 print("Loading model... this might take a second.")
-learn = load_learner(MODEL_PATH)
-print("Model loaded successfully!")
+try:
+    learn = load_learner(MODEL_PATH)
+    print("Model loaded successfully!")
+except Exception as e:
+    print("\n" + "="*50)
+    print("🚨 REAL ERROR DETECTED 🚨")
+    print("Make sure 'purdue_gym_model.pkl' is actually uploaded to GitHub!")
+    print(f"Error Type: {type(e)}")
+    print(f"Error Message: {e}")
+    print("="*50 + "\n")
+    raise e
+finally:
+    # Safely revert the path hack if it was applied
+    if is_windows:
+        pathlib.PosixPath = temp
 
-if platform.system() == 'Windows':
-    pathlib.PosixPath = temp
-
-# 2. Extract the raw PyTorch model and set it to Evaluation Mode
+# 4. Extract Pure PyTorch Model for Inference
 model = learn.model.cpu()
 model.eval()
 
-# 3. Define the exact mathematical transformations fastai uses under the hood
+# 5. Define mathematical transformations
 img_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -47,38 +61,28 @@ img_transform = transforms.Compose([
 
 @app.post("/upload-image", tags=["root"])
 async def upload_image(file: UploadFile = File(...)):
+    # Read raw bytes from the HTTP request
     image_bytes = await file.read()
-    temp_filename = BASE_DIR / f"{uuid.uuid4()}.jpg"
     
-    with open(temp_filename, "wb") as f:
-        f.write(image_bytes)
+    # 6. IN-MEMORY PROCESSING: Open image directly from RAM, no temp files needed
+    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    
+    # Convert PIL Image to a PyTorch Tensor and add batch dimension
+    img_tensor = img_transform(img).unsqueeze(0)
+    
+    # 7. Pure PyTorch Inference (Bypassing fastai completely)
+    with torch.no_grad():
+        logits = model(img_tensor)
+        probs = torch.nn.functional.softmax(logits[0], dim=0)
         
-    try:
-        # 4. Load image cleanly with PIL
-        img = Image.open(temp_filename).convert('RGB')
+        # Get winning prediction index and confidence score
+        pred_idx = torch.argmax(probs).item()
+        confidence = probs[pred_idx].item()
         
-        # 5. Convert image to a PyTorch Tensor
-        img_tensor = img_transform(img).unsqueeze(0) 
+        # Translate the index back to the gym machine name
+        pred_class = learn.dls.vocab[pred_idx]
         
-        # 6. THE BYPASS: Run pure PyTorch inference (bypassing fastai completely)
-        with torch.no_grad():
-            logits = model(img_tensor)
-            probs = torch.nn.functional.softmax(logits[0], dim=0)
-            
-            # Get the winning prediction index and confidence score
-            pred_idx = torch.argmax(probs).item()
-            confidence = probs[pred_idx].item()
-            
-            # Use fastai's vocabulary to translate the index back to the machine name
-            pred_class = learn.dls.vocab[pred_idx]
-
-        print(str(pred_class), str(confidence))
-            
-        return {
-            "machine": str(pred_class),
-            "confidence": float(confidence)
-        }
-        
-    finally:
-        if temp_filename.exists():
-            temp_filename.unlink()
+    return {
+        "machine": str(pred_class),
+        "confidence": float(confidence)
+    }
