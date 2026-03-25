@@ -6,6 +6,7 @@ from PIL import Image
 import torch
 import pathlib
 import uuid
+import platform
 
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 MODEL_PATH = BASE_DIR / "purdue_gym_model.pkl"
@@ -21,14 +22,17 @@ app.add_middleware(
 )
 
 # 1. The Linux -> Windows Path Hack
-temp = pathlib.PosixPath
-pathlib.PosixPath = pathlib.WindowsPath
+temp = None
+if platform.system() == 'Windows':
+    temp = pathlib.PosixPath
+    pathlib.PosixPath = pathlib.WindowsPath
 
 print("Loading model... this might take a second.")
 learn = load_learner(MODEL_PATH)
 print("Model loaded successfully!")
 
-pathlib.PosixPath = temp
+if platform.system() == 'Windows':
+    pathlib.PosixPath = temp
 
 # 2. Extract the raw PyTorch model and set it to Evaluation Mode
 model = learn.model.cpu()
