@@ -1,10 +1,10 @@
 import { retrieveData, storeData } from '@/components/async-storage';
+import CameraButton from '@/components/camera-button';
+import RequestPermissionButton from '@/components/request-permission-button';
 
 import { CameraType, CameraView, FlashMode, useCameraPermissions } from 'expo-camera';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useRouter } from 'expo-router';
-import * as jpeg from 'jpeg-js';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
@@ -13,19 +13,16 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 const labels = [
-  "Bicep Curl Machine",
-  "Chest Fly Machine",
-  "Chest Press Machine",
-  "Dip/Chin-Up Station",
-  "Lat Pulldown Machine",
-  "Lateral Raise Machine",
-  "Leg Extension Machine",
-  "Leg Press Machine",
-  "Leg Curl Machine",
-  "Seated Cable Row",
-  "Seated Dip Machine",
-  "Shoulder Press Machine",
-  "Smith Machine"
+    "Ab Crunch Machine",
+    "Adjustable Pulley Machine",
+    "Bench Press",
+    "Chest Press Machine",
+    "Hack Squat Machine",
+    "Hip Abduction Machine",
+    "Lat Pulldown Machine",
+    "Leg Extension Machine",
+    "Lying Leg Curl Machine",
+    "Triceps Extension Machine"
 ];
 
 // Base64 decoding function
@@ -40,6 +37,44 @@ function decodeBase64(input: string) {
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) bytes[i] = output.charCodeAt(i);
   return bytes;
+}
+
+function isTomorrow(targetDate : Date) {
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  return (
+      targetDate.getFullYear() === tomorrow.getFullYear() &&
+      targetDate.getMonth() === tomorrow.getMonth() &&
+      targetDate.getDate() === tomorrow.getDate()
+  );
+}
+
+async function changeStreak() {
+  const rawStreakData = await retrieveData('streakData');
+  const currentDate = new Date();
+  if (!rawStreakData) {
+    const streakData = {'streak': 1, 'date': currentDate};
+    console.log(streakData);
+    await storeData('streakData', JSON.stringify(streakData));
+    return "Streak Started!";
+  }
+  let response = "";
+  const streakData = JSON.parse(rawStreakData);
+  if (streakData.date !== currentDate.toLocaleDateString()) {
+      if (!isTomorrow(currentDate)) {
+          streakData.streak = 1;
+          response = "Streak Lost :C";
+      } else {
+          streakData.streak++;
+          response = "Streak Maintained!"
+      }
+      streakData.date = currentDate.toLocaleDateString();
+      console.log(streakData);
+      await storeData('streakData', JSON.stringify(streakData));
+  }
+  return response;
 }
 
 export default function CameraScreen() {
@@ -57,7 +92,7 @@ export default function CameraScreen() {
   const cameraRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
   
-  const modelAsset = useTensorflowModel(require('../../assets/gym_mobilenet_float16.tflite'));
+  const modelAsset = useTensorflowModel(require('../../assets/gym_model_purdue_data_float16.tflite'));
   const router = useRouter();
 
   useEffect(() => {
@@ -65,6 +100,7 @@ export default function CameraScreen() {
       console.log('✅ Model loaded');
       modelRef.current = modelAsset.model;
       setModelState('loaded');
+      // removeData("streakData");
     }
   }, [modelAsset.state]);
 
@@ -101,6 +137,21 @@ export default function CameraScreen() {
 
       // 📸 SHOW THE IMAGE ON SCREEN IMMEDIATELY
       setLastPhotoURI(manipulated.uri);
+
+      const formData = new FormData();
+
+      formData.append('file', {
+        uri: manipulated.uri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      await fetch('http://10.5.63.9:8000/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      /*
 
       if (modelRef.current) {
         console.log('📂 Reading file...');
@@ -156,11 +207,12 @@ export default function CameraScreen() {
         const prediction = labels[maxIndex];
 
         if (confidence > 50) {
-          setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%)`);
+          const response = await changeStreak();
+          setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%) ${response}`);
           const data = await retrieveData(prediction);
           if (data === null) {
             await storeData(prediction, "true");
-            setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉`);
+            setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉 ${response}`);
             console.log('Found new machine, storing in AsyncStorage: ', prediction);
           }
           router.push({
@@ -170,7 +222,7 @@ export default function CameraScreen() {
         } else {
           setPredictionLabel(`Uncertain Prediction (${confidence.toFixed(2)}%)`);
         }
-      }
+      } */
     } catch (error: any) {
       console.error('❌ Error:', error);
       Alert.alert('Error', error.message);
@@ -181,9 +233,7 @@ export default function CameraScreen() {
   if (!permission || !permission.granted) {
     return (
       <View style={[styles.container, styles.center]}>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-            <Text style={styles.btnText}>Grant Permission</Text>
-        </TouchableOpacity>
+        <RequestPermissionButton onPress={requestPermission} />
       </View>
     );
   }
@@ -215,9 +265,7 @@ export default function CameraScreen() {
                 )}
 
                 <View style={styles.controls}>
-                    <TouchableOpacity onPress={takePicture} style={styles.captureBtn}>
-                        <View style={styles.captureInner} />
-                    </TouchableOpacity>
+                    <CameraButton onPress={takePicture} />
                 </View>
             </View>
           </CameraView>
@@ -253,9 +301,5 @@ const styles = StyleSheet.create({
   closeBtn: { marginTop: 10, backgroundColor: '#444', padding: 8, borderRadius: 6, width: '100%', alignItems: 'center' },
   closeText: { color: 'white' },
 
-  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center'},
-  captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center'},
-  captureInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'white'},
-  btn: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8 },
-  btnText: { color: 'white' }
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}
 });

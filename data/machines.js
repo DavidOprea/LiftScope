@@ -1,49 +1,60 @@
 //data/machines.js
 
 /*
-Bicep Curl Machine
-Chess Press Machine
-Chest Fly Machine
-Dip or Chin-Up Machine
-Lat Pull Down
-Lateral Raises Machine
-Leg Curl Machine
-Leg Extension Machine
-Leg Press Machine
-Seated Cable Rows
-Seated Dip Machine
-Shoulder Press Machine
-smith machine
+  Ab Crunch Machine
+  Adjustable Pulley Machine
+  Bench Press
+  Chest Press
+  Hack Squat
+  Hip Abduction Machine
+  Lat Pulldown
+  Leg Extensions
+  Lying Leg Curl
+  Triceps Extension
 */
 
 export const MACHINES = [
   {
-    id: "Bicep Curl Machine",
-    name: "BICEP CURL MACHINE",
-    muscle_groups: ["Biceps"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968214/bicep_curl_odkey9.mp4",
-    description: "Sit on the machine and select a weight. Grip the handles and curl your arms towards your shoulders. Slowly return to the starting position."
+    id: "Ab Crunch Machine",
+    name: "AB CRUNCH MACHINE",
+    muscle_groups: ["Abs"],
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577117/ab_crunch_gmkzew.mp4",
+    description: "Sit on the machine and select a weight. Grip the handles and crunch forward, engaging your abs. Slowly return to the starting position."
   },
   {
-    id: "Chest Fly Machine",
-    name: "CHEST FLY",
+    id: "Adjustable Pulley Machine",
+    name: "ADJUSTABLE PULLEY",
     muscle_groups: ["Chest", "Shoulders"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968213/chest_fly_qjdbzj.mp4",
-    description: "Sit on the machine and select a weight. Grip the handles and bring them together in front of your chest, keeping a slight bend in your elbows. Slowly return to the starting position."
+    image_loc: require("../assets/images/cable_crossover.jpg"),
+    description: "This machine has two adjustable pulleys. With these pulleys you can perform a variety of exercises depending on the height and angle you set the pulleys at."
+  },
+  {
+    id: "Bench Press",
+    name: "BENCH PRESS",
+    muscle_groups: ["Chest", "Triceps", "Shoulders"],
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577074/bench_press_vfzqkf.mp4",
+    description: "Lie on the bench with feet flat on the floor. Grip the barbell slightly wider than shoulder-width. Lower the bar to your chest, then press it back up."
   },
   {
     id: "Chest Press Machine",
-    name: "CHEST PRESS",
+    name: "CHEST PRESS MACHINE",
     muscle_groups: ["Chest", "Triceps"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771969351/chest_press_dbrib9.mp4",
     description: "Sit and grip the handles at chest level. Press forward until arms are extended, keeping your back flat against the pad. Slowly return to start."
   },
   {
-    id: "Dip/Chin-Up Station",
-    name: "DIP/CHIN-UP STATION",
-    muscle_groups: ["Chest", "Triceps", "Shoulders"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968215/dips_mgsa2m.mp4",
-    description: "Grip the parallel bars and lift yourself up. Lower your body by bending your elbows until shoulders are below elbows, then press back up."
+    id: "Hack Squat Machine",
+    name: "HACK SQUAT",
+    muscle_groups: ["Quads", "Hamstrings", "Glutes"],
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577563/hack_squat_gglzrt.mp4",
+    description: "Stand on the platform with shoulders under the pads. Lower your body by bending your knees until thighs are parallel to the platform, then press back up."
+  },
+  {
+    id: "Hip Abduction Machine",
+    name: "HIP ABDUCTION MACHINE",
+    muscle_groups: ["Outer Thighs", "Glutes"],
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577745/hip_abduction_bdjuud.mp4",
+    description: "Sit on the machine with legs together and select a weight. Push your legs apart against the resistance, then slowly return to the starting position."
   },
   {
     id: "Lat Pulldown Machine",
@@ -53,13 +64,6 @@ export const MACHINES = [
     description: "Seated machine with thigh pads. Pull the bar down to your collarbone, squeezing your shoulder blades together."
   },
   {
-    id: "Lateral Raise Machine",
-    name: "LATERAL RAISE",
-    muscle_groups: ["Shoulders"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968213/lateral_raise_jryf5i.mp4",
-    description: "Sit with back against pad and grip handles at shoulder height. Raise your arms to the sides until they are parallel to the floor, then slowly lower back down."
-  },
-  {
     id: "Leg Extension Machine",
     name: "LEG EXTENSION",
     muscle_groups: ["Quads"],
@@ -67,45 +71,17 @@ export const MACHINES = [
     description: "Sit with back against pad and feet under the roller. Extend your legs until they are straight, then slowly lower back down."
   },
   {
-    id: "Leg Press Machine",
-    name: "LEG PRESS",
-    muscle_groups: ["Quads", "Hamstrings", "Glutes", "Calves"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968215/leg_press_mmccn0.mp4",
-    description: "Sit and place feet shoulder-width on platform. Lower weight until knees are at 90 degrees, then press through your entire foot."
-  },
-  {
-    id: "Leg Curl Machine",
-    name: "LEG CURL",
+    id: "Lying Leg Curl Machine",
+    name: "LYING LEG CURL",
     muscle_groups: ["Hamstrings"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968212/seated_leg_curl_gjymzb.mp4",
-    description: "Sit with back against pad and legs under the roller. Curl your legs towards your glutes, then slowly return to the starting position."
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577798/lying_leg_curl_ixomr6.mp4",
+    description: "Lie face down on the machine with ankles under the roller. Curl your legs up towards your glutes, then slowly lower back down."
   },
   {
-    id: "Seated Cable Row",
-    name: "SEATED CABLE ROW",
-    muscle_groups: ["Back", "Biceps"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968214/seated_row_odh8dr.mp4",
-    description: "Sit with feet on platform and knees slightly bent. Grip the handles and pull towards your torso, squeezing shoulder blades together."
-  },
-  {
-    id: "Seated Dip Machine",
-    name: "SEATED DIP MACHINE",
-    muscle_groups: ["Triceps", "Chest", "Shoulders"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968212/seated_dip_elkx3x.mp4",
-    description: "Sit on the machine and grip the handles. Push down to lift your body, then slowly return to the starting position."
-  },
-  {
-    id: "Shoulder Press Machine",
-    name: "SHOULDER PRESS",
-    muscle_groups: ["Shoulders", "Triceps"],
-    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968214/shoulder_press_eafw54.mp4",
-    description: "Sit with back against pad and grip handles at shoulder height. Press upward until arms are extended, avoiding locked elbows."
-  },
-  {
-    id: "Smith Machine",
-    name: "SMITH MACHINE",
-    muscle_groups: ["Legs", "Chest", "Shoulders"],
-    image_loc: require("../assets/images/smith_machine.png"),
-    description: "Barbell fixed to vertical guides. Safer for solo training but restricts natural bar path. Used for squats, presses, and lunges."
+    id: "Triceps Extension Machine",
+    name: "TRICEPS EXTENSION",
+    muscle_groups: ["Triceps"],
+    video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577826/tricep_extension_fg2kua.mp4",
+    description: "Sit with back against pad and grip handles above your head. Extend your arms upward until they are straight, then slowly return to the starting position."
   }
 ];

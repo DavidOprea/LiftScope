@@ -32,6 +32,20 @@ const TabLayout = () => {
           tabBarIcon: () => <Ionicons name="book-outline" color="gray" size={28} />
         }}
       />
+      <Tabs.Screen
+        name="logs"
+        options={{
+          title: "Logs",
+          tabBarIcon: () => <Ionicons name="list-outline" color="gray" size={28} />
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: () => <Ionicons name="person-outline" color="gray" size={28} />
+        }}
+      />
     </Tabs>
   );
 }
