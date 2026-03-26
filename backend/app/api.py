@@ -5,12 +5,9 @@ from torchvision import transforms
 from PIL import Image
 import torch
 import pathlib
+import uuid
 import platform
-import io
-import os
-import pickle
 
-# 1. Dynamic Pathing
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 MODEL_PATH = BASE_DIR / "purdue_gym_model.pkl"
 
@@ -24,48 +21,24 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# 2. Environment-Aware Path Hack
-is_windows = platform.system() == 'Windows'
-if is_windows:
+# 1. The Linux -> Windows Path Hack
+temp = None
+if platform.system() == 'Windows':
     temp = pathlib.PosixPath
     pathlib.PosixPath = pathlib.WindowsPath
 
-# 3. The Ultimate Diagnostic Loading Block
-print(f"Checking file at: {MODEL_PATH}")
-if not MODEL_PATH.exists():
-    raise FileNotFoundError("The purdue_gym_model.pkl file is COMPLETELY missing from the server.")
-
-file_size = os.path.getsize(MODEL_PATH)
-print(f"File size is: {file_size} bytes")
-
-if file_size < 10000:  # Less than 10KB
-    raise ValueError(f"\n🚨 GIT LFS TRAP TRIGGERED 🚨\nYour model is only {file_size} bytes! GitHub replaced your 20MB file with a tiny text pointer.\nYou MUST run the 'git lfs untrack' commands locally to push the raw bytes!")
-
 print("Loading model... this might take a second.")
-try:
-    # We must run pure PyTorch first to bypass fastai's error swallowing
-    torch.load(MODEL_PATH, map_location="cpu", pickle_module=pickle)
-    
-    # If pure PyTorch succeeds, let fastai wrap it
-    learn = load_learner(MODEL_PATH)
-    print("Model loaded successfully!")
-    
-except Exception as e:
-    print("\n" + "="*50)
-    print("🚨 REAL PYTORCH ERROR DETECTED 🚨")
-    print(f"Error Type: {type(e)}")
-    print(f"Error Message: {e}")
-    print("="*50 + "\n")
-    raise e
-finally:
-    if is_windows:
-        pathlib.PosixPath = temp
+learn = load_learner(MODEL_PATH)
+print("Model loaded successfully!")
 
-# 4. Extract Pure PyTorch Model for Inference
+if platform.system() == 'Windows':
+    pathlib.PosixPath = temp
+
+# 2. Extract the raw PyTorch model and set it to Evaluation Mode
 model = learn.model.cpu()
 model.eval()
 
-# 5. Define mathematical transformations
+# 3. Define the exact mathematical transformations fastai uses under the hood
 img_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -75,17 +48,37 @@ img_transform = transforms.Compose([
 @app.post("/upload-image", tags=["root"])
 async def upload_image(file: UploadFile = File(...)):
     image_bytes = await file.read()
-    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    img_tensor = img_transform(img).unsqueeze(0)
+    temp_filename = BASE_DIR / f"{uuid.uuid4()}.jpg"
     
-    with torch.no_grad():
-        logits = model(img_tensor)
-        probs = torch.nn.functional.softmax(logits[0], dim=0)
-        pred_idx = torch.argmax(probs).item()
-        confidence = probs[pred_idx].item()
-        pred_class = learn.dls.vocab[pred_idx]
+    with open(temp_filename, "wb") as f:
+        f.write(image_bytes)
         
-    return {
-        "machine": str(pred_class),
-        "confidence": float(confidence)
-    }
+    try:
+        # 4. Load image cleanly with PIL
+        img = Image.open(temp_filename).convert('RGB')
+        
+        # 5. Convert image to a PyTorch Tensor
+        img_tensor = img_transform(img).unsqueeze(0) 
+        
+        # 6. THE BYPASS: Run pure PyTorch inference (bypassing fastai completely)
+        with torch.no_grad():
+            logits = model(img_tensor)
+            probs = torch.nn.functional.softmax(logits[0], dim=0)
+            
+            # Get the winning prediction index and confidence score
+            pred_idx = torch.argmax(probs).item()
+            confidence = probs[pred_idx].item()
+            
+            # Use fastai's vocabulary to translate the index back to the machine name
+            pred_class = learn.dls.vocab[pred_idx]
+
+        print(str(pred_class), str(confidence))
+            
+        return {
+            "machine": str(pred_class),
+            "confidence": float(confidence)
+        }
+        
+    finally:
+        if temp_filename.exists():
+            temp_filename.unlink()
