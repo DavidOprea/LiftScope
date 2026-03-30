@@ -9,7 +9,7 @@ import uuid
 import platform
 
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
-MODEL_PATH = BASE_DIR / "purdue_gym_model.pkl"
+MODEL_PATH = BASE_DIR / "better_purdue_gym_model.pkl"
 
 app = FastAPI()
 

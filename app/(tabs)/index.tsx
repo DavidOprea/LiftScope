@@ -146,10 +146,18 @@ export default function CameraScreen() {
         type: 'image/jpeg',
       } as any);
 
-      await fetch('http://10.5.63.9:8000/upload-image', {
+      const res = await fetch('https://liftscope.onrender.com/upload-image', {
         method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
         body: formData
       });
+
+      // 5. UNPACK THE JSON (This is what was missing!)
+      const data = await res.json();
+      console.log('✅ Cloud Response:', data);
 
       /*
 
