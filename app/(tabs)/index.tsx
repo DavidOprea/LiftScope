@@ -14,15 +14,15 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 const labels = [
     "Ab Crunch Machine",
-    "Adjustable Pulley Machine",
+    "Assisted Pull Up",
     "Bench Press",
-    "Chest Press Machine",
+    "Cable Machine",
     "Hack Squat Machine",
-    "Hip Abduction Machine",
+    "Hyper Extension Machine",
     "Lat Pulldown Machine",
-    "Leg Extension Machine",
     "Lying Leg Curl Machine",
-    "Triceps Extension Machine"
+    "Smith Machine",
+    "Treadmill"
 ];
 
 // Base64 decoding function
@@ -62,7 +62,12 @@ async function changeStreak() {
   }
   let response = "";
   const streakData = JSON.parse(rawStreakData);
-  if (streakData.date !== currentDate.toLocaleDateString()) {
+  if (streakData === null) {
+    const streakData = {'streak': 1, 'date': currentDate};
+    console.log(streakData);
+    await storeData('streakData', JSON.stringify(streakData));
+    return "Streak Started!";
+  } else if (streakData.date !== currentDate.toLocaleDateString()) {
       if (!isTomorrow(currentDate)) {
           streakData.streak = 1;
           response = "Streak Lost :C";
@@ -92,7 +97,7 @@ export default function CameraScreen() {
   const cameraRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
   
-  const modelAsset = useTensorflowModel(require('../../assets/gym_model_purdue_data_float16.tflite'));
+  const modelAsset = useTensorflowModel(require('../../assets/gym_model_purdue.tflite'));
   const router = useRouter();
 
   useEffect(() => {
@@ -135,9 +140,6 @@ export default function CameraScreen() {
         { format: ImageManipulator.SaveFormat.JPEG, base64: false } 
       );
 
-      // 📸 SHOW THE IMAGE ON SCREEN IMMEDIATELY
-      setLastPhotoURI(manipulated.uri);
-
       const formData = new FormData();
 
       formData.append('file', {
@@ -158,6 +160,28 @@ export default function CameraScreen() {
       // 5. UNPACK THE JSON (This is what was missing!)
       const data = await res.json();
       console.log('✅ Cloud Response:', data);
+
+      const confidence = data['confidence'] * 100; // Convert to percentage
+      const prediction = data['machine'];
+
+      if (confidence > 70) {
+        const response = await changeStreak();
+        setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%) ${response}`);
+        const data = await retrieveData(prediction);
+        if (data === null) {
+          await storeData(prediction, "true");
+          setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉 ${response}`);
+          console.log('Found new machine, storing in AsyncStorage: ', prediction);
+        }
+        router.push({
+          pathname: "/machine-info",
+          params: { id: prediction }
+        });
+      } else {
+        setPredictionLabel(`Uncertain Prediction (${confidence.toFixed(2)}%)`);
+      }
+
+      setLastPhotoURI(manipulated.uri);
 
       /*
 
@@ -208,27 +232,6 @@ export default function CameraScreen() {
               maxScore = result[i];
               maxIndex = i;
           }
-        }
-
-        // Just multiply by 100 for the UI
-        const confidence = maxScore * 100; 
-        const prediction = labels[maxIndex];
-
-        if (confidence > 50) {
-          const response = await changeStreak();
-          setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%) ${response}`);
-          const data = await retrieveData(prediction);
-          if (data === null) {
-            await storeData(prediction, "true");
-            setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉 ${response}`);
-            console.log('Found new machine, storing in AsyncStorage: ', prediction);
-          }
-          router.push({
-            pathname: "/machine-info",
-            params: { id: prediction }
-          });
-        } else {
-          setPredictionLabel(`Uncertain Prediction (${confidence.toFixed(2)}%)`);
         }
       } */
     } catch (error: any) {

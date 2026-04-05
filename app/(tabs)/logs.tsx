@@ -7,6 +7,61 @@ import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const syncLogsToServer = async () => {
+    try {
+        const userId = await retrieveData('userId') || 'admin';
+        const logCountRaw = await retrieveData('log_count');
+        const log_count = Number(logCountRaw) || 0;
+
+        const allLogs = [];
+        for (let i = 0; i < log_count; i++) {
+            const logRaw = await retrieveData(`log_${i}`);
+            if (logRaw) {
+                allLogs.push(JSON.parse(logRaw));
+            }
+        }
+
+        const response = await fetch('https://liftscope.onrender.com/logs/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({logs : allLogs, userId: userId}) // Replace 'admin' with actual user ID if available
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to sync logs');
+        }
+    } catch (error) {
+        console.error('Error syncing logs:', error);
+    }
+}
+
+const loadLogsFromServer = async () => {
+    try {
+        const userId = await retrieveData('userId') || 'admin';
+        const response = await fetch(`https://liftscope.onrender.com/logs/get?userId=${userId}`); // Replace 'admin' with actual user ID if available
+        
+        if (!response.ok) {
+            throw new Error('Failed to load logs: ' + response.statusText);
+        }
+        
+        const logData = await response.json();
+
+        console.log("Received logs from server:", logData);
+
+        for (const log of logData.logs) {
+            const localLog = await retrieveData(`log_${log.id}`);
+            if (!localLog) {
+                await storeData(`log_${log.id}`, JSON.stringify(log));
+            }
+        }
+
+    } catch (error) {
+        console.error('Error loading logs from server:', error);
+    }
+}
+
 const Logs = () => {
     const router = useRouter();
     const [logs, setLogs] = useState<any[]>([]);
@@ -61,7 +116,11 @@ const Logs = () => {
 
     useFocusEffect(
         useCallback(() => {
+            loadLogsFromServer();
             getLogs(); 
+            return () => {
+                syncLogsToServer();
+            }
         }, [])
     );
 

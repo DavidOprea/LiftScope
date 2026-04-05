@@ -5,6 +5,24 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+const deleteLogFromServer = async (logId: string) => {
+    try {
+        const response = await fetch(`https://liftscope.onrender.com/logs/delete/${logId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to delete log: ' + response.statusText);
+        }
+        
+        const logData = await response.json();
+
+        console.log("Deleted log from server:", logData);
+    } catch (error) {
+        console.error('Error deleting log from server:', error);
+    }
+}
+
 const LogPage = () => {
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
@@ -52,6 +70,7 @@ const LogPage = () => {
   const removeLog = async () => {
     isDeleting.current = true; // Block auto-save
     await removeData(`log_${id}`);
+    await deleteLogFromServer(id as string);
     
     const rawLogCount = await retrieveData('log_count');
     let log_count = Number(rawLogCount) || 0;

@@ -1,9 +1,9 @@
-import { retrieveData } from "@/components/async-storage";
+import { retrieveData, storeData } from "@/components/async-storage";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Library = () => {
@@ -12,19 +12,27 @@ const Library = () => {
   const [searchVal, setSearchVal] = useState("");
   const [filteredMachineData, setFilteredMachineData] = useState(machineData)
   const [unlockedMachines, setUnlockedMachines] = useState<{ [key: string]: boolean }>({});
+  const [allMachinesUnlocked, setAllMachinesUnlocked] = useState(false);
+
+  const handleToggle = () => {
+    storeData("allMachinesUnlocked", (!allMachinesUnlocked).toString());
+    setAllMachinesUnlocked(!allMachinesUnlocked);
+  }
 
   useFocusEffect(
     useCallback(() => {
       const fetchUnlockedMachines = async () => {
+        const allUnlocked = JSON.parse(await retrieveData("allMachinesUnlocked") || "false");
+        setAllMachinesUnlocked(allUnlocked);
         const unlocked : { [key: string]: boolean } = {};
         for (const machine of machineData) {
           const isUnlocked = await retrieveData(machine.id);
-          unlocked[machine.id] = isUnlocked !== null ? true : false;
+          unlocked[machine.id] = ((isUnlocked !== null) || allMachinesUnlocked) ? true : false;
         }
         setUnlockedMachines(unlocked);
       };
       fetchUnlockedMachines();
-    }, [])
+    }, [allMachinesUnlocked])
   );
 
   const handleMachineClick = (machineId: string) => {
@@ -62,6 +70,19 @@ const Library = () => {
           placeholderTextColor="black"
         />
       </SafeAreaView>
+
+      <View style={styles.container}>
+        <Text style={styles.text}>
+          Unlock All Machines
+        </Text>
+        <Switch
+          trackColor={{ false: "#767577", true: "#767577" }} 
+          thumbColor={allMachinesUnlocked ? "#fbff01" : "#f4f3f4"}  
+          ios_backgroundColor="#3e3e3e"                  
+          onValueChange={handleToggle}  
+          value={allMachinesUnlocked}     
+        />
+      </View>
 
       <View 
         style={styles.container2}
@@ -113,7 +134,7 @@ const styles = StyleSheet.create({
     padding: 10,
     width: '80%',
     marginTop: 20,
-    marginBottom: -30,
+    marginBottom: -40,
     backgroundColor: "white",
   },
   listContainer: {
