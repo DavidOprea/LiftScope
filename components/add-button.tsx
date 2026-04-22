@@ -5,7 +5,7 @@ type Props = {
   onPress: () => void;
 };
 
-export default function AddLogButton({ onPress } : Props) {
+export default function AddButton({ onPress } : Props) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.button}>
       <Ionicons name="add" size={24} color="white" />

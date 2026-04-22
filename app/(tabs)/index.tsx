@@ -2,245 +2,279 @@ import { retrieveData, storeData } from '@/components/async-storage';
 import CameraButton from '@/components/camera-button';
 import RequestPermissionButton from '@/components/request-permission-button';
 
+import { Asset } from 'expo-asset';
 import { CameraType, CameraView, FlashMode, useCameraPermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useRouter } from 'expo-router';
+import jpeg from 'jpeg-js';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTensorflowModel } from 'react-native-fast-tflite';
+import { loadTensorflowModel } from 'react-native-fast-tflite';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 const labels = [
-    "Ab Crunch Machine",
-    "Assisted Pull Up",
-    "Bench Press",
-    "Cable Machine",
-    "Hack Squat Machine",
-    "Hyper Extension Machine",
-    "Lat Pulldown Machine",
-    "Lying Leg Curl Machine",
-    "Smith Machine",
-    "Treadmill"
+  "Ab Crunch Machine",
+  "Assisted Pull Up",
+  "Bench Press",
+  "Cable Machine",
+  "Hack Squat Machine",
+  "Hyperextension Machine",
+  "Lat Pulldown Machine",
+  "Lying Leg Curl Machine",
+  "Smith Machine",
+  "Treadmill"
 ];
 
-// Base64 decoding function
-function decodeBase64(input: string) {
-  const str = input.replace(/=+$/, '');
-  let output = '';
-  if (str.length % 4 == 1) throw new Error("'atob' failed");
-  for (let bc = 0, bs = 0, buffer, i = 0; buffer = str.charAt(i++); ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer, bc++ % 4) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0) {
-    buffer = chars.indexOf(buffer);
-  }
-  const len = output.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = output.charCodeAt(i);
-  return bytes;
-}
-
-function isTomorrow(targetDate : Date) {
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
+function isYesterday(targetDateStr: string) {
+  const lastDate = new Date(targetDateStr);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
   return (
-      targetDate.getFullYear() === tomorrow.getFullYear() &&
-      targetDate.getMonth() === tomorrow.getMonth() &&
-      targetDate.getDate() === tomorrow.getDate()
+    lastDate.getFullYear() === yesterday.getFullYear() &&
+    lastDate.getMonth() === yesterday.getMonth() &&
+    lastDate.getDate() === yesterday.getDate()
   );
 }
 
 async function changeStreak() {
   const rawStreakData = await retrieveData('streakData');
-  const currentDate = new Date();
-  if (!rawStreakData) {
-    const streakData = {'streak': 1, 'date': currentDate};
-    console.log(streakData);
-    await storeData('streakData', JSON.stringify(streakData));
+  const currentDateStr = new Date().toDateString();
+  console.log(currentDateStr);
+  console.log("Current streak data:", rawStreakData);
+  
+  if (!rawStreakData || rawStreakData === "null") {
+    await storeData('streakData', JSON.stringify({ streak: 1, date: currentDateStr }));
     return "Streak Started!";
   }
-  let response = "";
+
   const streakData = JSON.parse(rawStreakData);
-  if (streakData === null) {
-    const streakData = {'streak': 1, 'date': currentDate};
-    console.log(streakData);
-    await storeData('streakData', JSON.stringify(streakData));
-    return "Streak Started!";
-  } else if (streakData.date !== currentDate.toLocaleDateString()) {
-      if (!isTomorrow(currentDate)) {
-          streakData.streak = 1;
-          response = "Streak Lost :C";
-      } else {
-          streakData.streak++;
-          response = "Streak Maintained!"
-      }
-      streakData.date = currentDate.toLocaleDateString();
-      console.log(streakData);
-      await storeData('streakData', JSON.stringify(streakData));
+  
+  if (streakData.date === currentDateStr) {
+    await storeData('streakData', JSON.stringify({ streak: 1, date: currentDateStr }));
+    return "";
   }
-  return response;
+  
+  if (isYesterday(currentDateStr)) {
+    streakData.streak++;
+    streakData.date = currentDateStr;
+    await storeData('streakData', JSON.stringify(streakData));
+    return "Streak Maintained!";
+  } else {
+    streakData.streak = 1;
+  }
+  streakData.date = currentDateStr;
+  await storeData('streakData', JSON.stringify(streakData));
+  return "Streak Lost :C";
+}
+
+async function runOnDeviceInference(
+  imageUri: string,
+  model: any
+): Promise<{ machine: string; confidence: number } | null> {
+  try {
+    // Read the 224x224 JPEG as base64
+    const base64Data = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // Decode base64 → raw bytes
+    const binaryStr = atob(base64Data);
+    const jpegBytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      jpegBytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    // Decode JPEG → actual RGBA pixel data
+    const decoded = jpeg.decode(jpegBytes, { useTArray: true });
+
+    // Build Float32 input tensor with ImageNet normalization
+    const inputTensor = new Float32Array(224 * 224 * 3);
+    const mean = [0.485, 0.456, 0.406];
+    const std = [0.229, 0.224, 0.225];
+
+    for (let i = 0; i < 224 * 224; i++) {
+      const offset = i * 3;
+      inputTensor[offset]     = ((decoded.data[i * 4]     / 255) - mean[0]) / std[0]; // R
+      inputTensor[offset + 1] = ((decoded.data[i * 4 + 1] / 255) - mean[1]) / std[1]; // G
+      inputTensor[offset + 2] = ((decoded.data[i * 4 + 2] / 255) - mean[2]) / std[2]; // B
+    }
+
+    const outputs = model.runSync([inputTensor]);
+    const result = outputs[0];
+
+    let maxScore = -Infinity;
+    let maxIndex = -1;
+    for (let i = 0; i < result.length; i++) {
+      if (result[i] > maxScore) {
+        maxScore = result[i];
+        maxIndex = i;
+      }
+    }
+
+    return {
+      machine: labels[maxIndex] ?? 'Unknown',
+      confidence: maxScore,
+    };
+  } catch (e) {
+    console.error('❌ On-device inference error:', e);
+    return null;
+  }
 }
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('off');
   const [permission, requestPermission] = useCameraPermissions();
-  const [modelState, setModelState] = useState('not-started');
-  
+  const [modelState, setModelState] = useState<'loading' | 'loaded' | 'error'>('loading');
+
   const [lastPhotoURI, setLastPhotoURI] = useState<string | null>(null);
   const [predictionLabel, setPredictionLabel] = useState<string>('');
 
   const [zoom, setZoom] = useState(0);
   const savedScale = useSharedValue(0);
-  
+
   const cameraRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
-  
-  const modelAsset = useTensorflowModel(require('../../assets/gym_model_purdue.tflite'));
   const router = useRouter();
 
+  // Copy model from bundle to device filesystem on first launch, then load via file://
   useEffect(() => {
-    if (modelAsset.state === 'loaded') {
-      console.log('✅ Model loaded');
-      modelRef.current = modelAsset.model;
-      setModelState('loaded');
-      // removeData("streakData");
+    async function loadModel() {
+      try {
+        const asset = Asset.fromModule(require('../../assets/gym_model_mobile.tflite'));
+        await asset.downloadAsync();
+
+        // FileSystem.documentDirectory already ends with '/'
+        const destPath = `${FileSystem.documentDirectory}gym_model_mobile.tflite`;
+        const info = await FileSystem.getInfoAsync(destPath);
+
+        if (!info.exists) {
+          await FileSystem.copyAsync({ from: asset.localUri!, to: destPath });
+          console.log('📦 Model copied to filesystem');
+        }
+
+        // Strip the file:// prefix since loadTensorflowModel prepends its own
+        const filePath = destPath.startsWith('file://')
+          ? destPath.slice('file://'.length)
+          : destPath;
+
+        const model = await loadTensorflowModel({ url: `file://${filePath}` });
+        modelRef.current = model;
+        setModelState('loaded');
+        console.log('✅ On-device model loaded');
+      } catch (e) {
+        console.error('❌ Failed to load on-device model:', e);
+        setModelState('error');
+      }
     }
-  }, [modelAsset.state]);
+    loadModel();
+  }, []);
 
   const pinchGesture = Gesture.Pinch()
-    .onUpdate((event : any) => {
-      const newZoom = savedScale.value + (event.scale - 1) * 0.5; 
-      const clampedZoom = Math.max(0, Math.min(1, newZoom));
-      runOnJS(setZoom)(clampedZoom);
+    .onUpdate((event: any) => {
+      const newZoom = savedScale.value + (event.scale - 1) * 0.5;
+      runOnJS(setZoom)(Math.max(0, Math.min(1, newZoom)));
     })
-    .onEnd((event : any) => {
-      const finalZoom = savedScale.value + (event.scale - 1) * 0.5;
-      savedScale.value = Math.max(0, Math.min(1, finalZoom));
+    .onEnd((event: any) => {
+      savedScale.value = Math.max(0, Math.min(1, savedScale.value + (event.scale - 1) * 0.5));
     });
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
-    
+
     try {
       console.log('📸 Snapping...');
-      // 1. Take Picture
+
       const photo = await cameraRef.current.takePictureAsync({
-        base64: false, 
-        quality: 1.0
+        base64: false,
+        quality: 1.0,
       });
 
-      // 2. Resize to 224x224
       const manipulated = await ImageManipulator.manipulateAsync(
         photo.uri,
-        [
-          { resize: { width: 224, height: 224 } }
-        ],
-        { format: ImageManipulator.SaveFormat.JPEG, base64: false } 
+        [{ resize: { width: 224, height: 224 } }],
+        { format: ImageManipulator.SaveFormat.JPEG, base64: false }
       );
 
-      const formData = new FormData();
+      setPredictionLabel('Analyzing...');
+      setLastPhotoURI(manipulated.uri);
 
-      formData.append('file', {
-        uri: manipulated.uri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      } as any);
+      let machine: string | null = null;
+      let confidence: number | null = null;
 
-      const res = await fetch('https://liftscope.onrender.com/upload-image', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData
-      });
+      // Try cloud first
+      try {
+        const formData = new FormData();
+        formData.append('file', {
+          uri: manipulated.uri,
+          name: 'photo.jpg',
+          type: 'image/jpeg',
+        } as any);
 
-      // 5. UNPACK THE JSON (This is what was missing!)
-      const data = await res.json();
-      console.log('✅ Cloud Response:', data);
+        const res = await fetch('https://liftscope.onrender.com/image/upload', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
 
-      const confidence = data['confidence'] * 100; // Convert to percentage
-      const prediction = data['machine'];
+        const data = await res.json();
+        console.log('✅ Cloud Response:', data);
+        machine = data['machine'];
+        if (machine === "Hyper Extension Machine") {
+          machine = "Hyperextension Machine"; // Normalize old label to new
+        }
+        confidence = data['confidence'] * 100;
 
-      if (confidence > 70) {
-        const response = await changeStreak();
-        setPredictionLabel(`Class: ${prediction} (${confidence.toFixed(2)}%) ${response}`);
-        const data = await retrieveData(prediction);
-        if (data === null) {
-          await storeData(prediction, "true");
-          setPredictionLabel(`New Machine Unlocked: ${prediction}! 🎉 ${response}`);
-          console.log('Found new machine, storing in AsyncStorage: ', prediction);
+      } catch (cloudError) {
+        console.log('☁️ Cloud unavailable, falling back to on-device model...');
+
+        if (modelRef.current) {
+          const result = await runOnDeviceInference(manipulated.uri, modelRef.current);
+          if (result) {
+            machine = result.machine;
+            confidence = result.confidence * 100;
+          }
+        } else {
+          Alert.alert(
+            'Offline',
+            modelState === 'loading'
+              ? 'The on-device model is still loading, please wait a moment.'
+              : 'No network connection and the on-device model failed to load.'
+          );
+          return;
+        }
+      }
+
+      // Handle result
+      if (machine && confidence !== null && confidence > 60) {
+        const streakResponse = await changeStreak();
+        const existingData = await retrieveData(machine);
+        if (existingData === null) {
+          await storeData(machine, "true");
+          setPredictionLabel(`New Machine Unlocked: ${machine}! 🎉 ${streakResponse}`);
+          console.log('Found new machine:', machine);
+        } else {
+          setPredictionLabel(`Class: ${machine} (${confidence.toFixed(2)}%) ${streakResponse}`);
         }
         router.push({
           pathname: "/machine-info",
-          params: { id: prediction }
+          params: { id: machine }
         });
-      } else {
-        setPredictionLabel(`Uncertain Prediction (${confidence.toFixed(2)}%)`);
+      } else if (confidence !== null) {
+        setPredictionLabel(`Maybe (${machine || 'Unknown'}) (${confidence.toFixed(2)}%)`);
       }
 
-      setLastPhotoURI(manipulated.uri);
-
-      /*
-
-      if (modelRef.current) {
-        console.log('📂 Reading file...');
-        const base64Data = await FileSystem.readAsStringAsync(manipulated.uri, {
-            encoding: 'base64'
-        });
-
-        const jpegBytes = decodeBase64(base64Data);
-        const { width, height, data } = jpeg.decode(jpegBytes, { useTArray: true });
-        
-        const inputTensor = new Float32Array(224 * 224 * 3);
-        let pixelIndex = 0;
-        let totalBrightness = 0;
-
-        const mean = [0.485, 0.456, 0.406];
-        const std = [0.229, 0.224, 0.225];
-
-        for (let i = 0; i < width * height; i++) {
-          const r = data[i * 4];
-          const g = data[i * 4 + 1];
-          const b = data[i * 4 + 2];
-          
-          totalBrightness += (r+g+b);
-
-          inputTensor[pixelIndex++] = ((r / 255) - mean[0]) / std[0];
-          inputTensor[pixelIndex++] = ((g / 255) - mean[1]) / std[1];
-          inputTensor[pixelIndex++] = ((b / 255) - mean[2]) / std[2];
-        }
-        
-        const avgBrightness = Math.floor(totalBrightness / (width * height));
-        console.log(`💡 Brightness: ${avgBrightness}`);
-
-        // Run Model
-        const outputs = await modelRef.current.run([inputTensor]);
-        const result = outputs[0];
-
-        // 3. Find the highest probability directly
-        let maxScore = -Infinity;
-        let maxIndex = -1;
-        
-        for (let i = 0; i < result.length; i++) {
-          // result[i] is already a clean percentage from 0.0 to 1.0!
-          console.log(`Class ${labels[i]}: ${(result[i] * 100).toFixed(2)}%`);
-          
-          if(result[i] > maxScore) {
-              maxScore = result[i];
-              maxIndex = i;
-          }
-        }
-      } */
     } catch (error: any) {
       console.error('❌ Error:', error);
       Alert.alert('Error', error.message);
     }
   };
 
-  // --- UI CODE ---
   if (!permission || !permission.granted) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -262,22 +296,22 @@ export default function CameraScreen() {
             zoom={zoom}
           >
             <View style={styles.overlay}>
-                
-                {/* 🖼️ DEBUG PREVIEW BOX 🖼️ */}
-                {lastPhotoURI && (
-                    <View style={styles.previewBox}>
-                        <Text style={styles.previewTitle}>Captured Image:</Text>
-                        <Image source={{ uri: lastPhotoURI }} style={styles.previewImage} />
-                        <Text style={styles.previewResult}>{predictionLabel}</Text>
-                        <TouchableOpacity onPress={() => setLastPhotoURI(null)} style={styles.closeBtn}>
-                            <Text style={styles.closeText}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
 
-                <View style={styles.controls}>
-                    <CameraButton onPress={takePicture} />
+              {lastPhotoURI && (
+                <View style={styles.previewBox}>
+                  <Text style={styles.previewTitle}>Captured Image:</Text>
+                  <Image source={{ uri: lastPhotoURI }} style={styles.previewImage} />
+                  <Text style={styles.previewResult}>{predictionLabel}</Text>
+                  <TouchableOpacity onPress={() => setLastPhotoURI(null)} style={styles.closeBtn}>
+                    <Text style={styles.closeText}>Close</Text>
+                  </TouchableOpacity>
                 </View>
+              )}
+
+              <View style={styles.controls}>
+                <CameraButton onPress={takePicture} />
+              </View>
+
             </View>
           </CameraView>
         </GestureDetector>
@@ -290,9 +324,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'black' },
   camera: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  overlay: { flex: 1, justifyContent: 'flex-end', paddingBottom: 10},
-  
-  // Preview Styles
+  overlay: { flex: 1, justifyContent: 'flex-end', paddingBottom: 10 },
   previewBox: {
     position: 'absolute',
     top: 50,
@@ -304,13 +336,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 100,
     borderWidth: 2,
-    borderColor: '#fff'
+    borderColor: '#fff',
   },
   previewTitle: { color: 'white', marginBottom: 5, fontWeight: 'bold' },
   previewImage: { width: 224, height: 224, backgroundColor: '#000', borderRadius: 8 },
   previewResult: { color: '#4cd137', fontSize: 16, marginTop: 5, fontWeight: 'bold' },
   closeBtn: { marginTop: 10, backgroundColor: '#444', padding: 8, borderRadius: 6, width: '100%', alignItems: 'center' },
   closeText: { color: 'white' },
-
-  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
 });

@@ -19,7 +19,7 @@ const deleteLogFromServer = async (logId: string) => {
 
         console.log("Deleted log from server:", logData);
     } catch (error) {
-        console.error('Error deleting log from server:', error);
+        console.log('Error deleting log from server:', error);
     }
 }
 

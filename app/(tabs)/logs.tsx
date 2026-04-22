@@ -1,5 +1,5 @@
-import AddLogButton from '@/components/add-log-button';
-import { retrieveData, storeData } from '@/components/async-storage';
+import AddButton from '@/components/add-button';
+import { retrieveData, storeData } from "@/components/async-storage";
 import ListButton from '@/components/list-button';
 
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -30,10 +30,10 @@ const syncLogsToServer = async () => {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to sync logs');
+            console.log('Failed to sync logs:', response.statusText);
         }
     } catch (error) {
-        console.error('Error syncing logs:', error);
+        console.log('Error syncing logs:', error);
     }
 }
 
@@ -58,7 +58,7 @@ const loadLogsFromServer = async () => {
         }
 
     } catch (error) {
-        console.error('Error loading logs from server:', error);
+        console.log('Error loading logs from server:', error);
     }
 }
 
@@ -140,7 +140,7 @@ const Logs = () => {
                 />
             </View>
             <View style={styles.buttonContainer}>
-                <AddLogButton onPress={addNewLog} />
+                <AddButton onPress={addNewLog} />
             </View>
         </View>
     )

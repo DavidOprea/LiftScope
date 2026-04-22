@@ -1,11 +1,8 @@
-import AddButton from '@/components/add-button';
 import { retrieveData, storeData } from '@/components/async-storage';
 import { useFocusEffect } from 'expo-router';
 
-import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 const Profile = () => {
   const [name, setName] = useState("");
@@ -53,17 +50,13 @@ const Profile = () => {
 
           console.log("Received profile data from server:", profileData);
 
-          if (profileData.name && profileData.name !== "") {
+          if (profileData.name) {
               await storeData('name', profileData.name);
               setName(profileData.name);
-          } else {
-            profileData.name = await retrieveData('name') || ""; // Fallback to local storage if server doesn't have name
           }
-          if (profileData.age && profileData.age !== "") {
+          if (profileData.age) {
               await storeData('age', profileData.age);
               setAge(profileData.age);
-          } else {
-            profileData.age = await retrieveData('age') || ""; // Fallback to local storage if server doesn't have age
           }
           if (profileData.streakData) {
               await storeData('streakData', JSON.stringify(profileData.streakData));
@@ -107,10 +100,12 @@ const Profile = () => {
     await storeData('streakData', JSON.stringify(streakData));
   }
 
-  const openEditProfile = () => {
-      router.push({
-          pathname: "/profile-edit"
-      });
+  const handleNameTextChange = (nameText: string) => {
+    setName(nameText);
+  }
+
+  const handleAgeTextChange = (ageText: string) => {
+    setAge(ageText);
   }
 
   useFocusEffect(
@@ -127,19 +122,22 @@ const Profile = () => {
 
   return (
       <View style={styles.container}>
-        <SafeAreaView style={styles.textContainer}>
-            <Text style={[styles.titleText, styles.text]}>Profile</Text>
-        </SafeAreaView>
         <View style={styles.container2} >
             <Text style={[styles.text, styles.profileHeader]}>Name: </Text>
-            <Text style={[styles.text, styles.textInfo]}>{name}</Text>
+            <TextInput
+              value={name}
+              style={styles.input}
+              placeholder='Input name'
+              onChangeText={handleNameTextChange}
+            ></TextInput>
             <Text style={[styles.text, styles.profileHeader]}>Age: </Text>
-            <Text style={[styles.text, styles.textInfo]}>{age}</Text>
-            {streakData ? <Text style={[styles.text, styles.profileHeader]}>Streak: {streakData.streak}🔥</Text> : 
-              <Text style={[styles.text, styles.profileHeader]}>Streak: 0🔥</Text>}
-        </View>
-        <View style={styles.buttonContainer}>
-            <AddButton onPress={openEditProfile} />
+            <TextInput
+              value={age}
+              inputMode="numeric"
+              style={styles.input}
+              placeholder='Input age'
+              onChangeText={handleAgeTextChange}
+            ></TextInput>
         </View>
       </View>
     );
@@ -171,11 +169,6 @@ const styles = StyleSheet.create({
       marginLeft: 10,
       marginTop: 10,
       textDecorationLine: 'underline'
-    },
-    textInfo: {
-      fontSize: 30,
-      marginLeft: 20,
-      marginTop: 10,
     },
     textContainer: {
       justifyContent: 'center',
