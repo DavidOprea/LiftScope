@@ -52,7 +52,6 @@ const LogPage = () => {
       return;
     }
     const jsonData = JSON.parse(raw);
-    jsonData.date = new Date(jsonData.date);
     
     setData(jsonData);
     setText(jsonData.text ?? "");
@@ -70,29 +69,8 @@ const LogPage = () => {
   const removeLog = async () => {
     isDeleting.current = true; // Block auto-save
     await removeData(`log_${id}`);
-    await deleteLogFromServer(id as string);
-    
-    const rawLogCount = await retrieveData('log_count');
-    let log_count = Number(rawLogCount) || 0;
-    const start = Number(id ?? -1) + 1;
+    await deleteLogFromServer(id as string).catch((e) => {console.log(e)});
 
-    if (isNaN(log_count) || isNaN(start)) {
-      navigation.goBack();
-      return;
-    }
-
-    for (let i = start; i < log_count; i++) {
-      const otherRaw = await retrieveData(`log_${i}`);
-      if (!otherRaw) continue;
-      let otherData = JSON.parse(otherRaw);
-      otherData.id = i - 1;
-      await storeData(`log_${i - 1}`, JSON.stringify(otherData));
-    }
-
-    await removeData(`log_${log_count - 1}`);
-    log_count--;
-    await storeData('log_count', log_count.toString());
-    
     navigation.goBack();
   }
   
@@ -116,7 +94,7 @@ const LogPage = () => {
         color: '#ffffff', // Title text color (alternative to headerTintColor)
       },
       // Optional: Change the title
-      title: data ? `Log ${id}: ${data.date.toLocaleDateString()}` : `Log ${id}`,
+      title: data ? `${data.title}` : `Log ${id}`,
     });
 
     return unsubscribe;

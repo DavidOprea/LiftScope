@@ -47,6 +47,8 @@ const loadLogsFromServer = async () => {
         }
         
         const logData = await response.json();
+        const logCountRaw = await retrieveData('log_count');
+        const localLogCount = Number(logCountRaw) || 0;
 
         console.log("Received logs from server:", logData);
 
@@ -54,6 +56,10 @@ const loadLogsFromServer = async () => {
             const localLog = await retrieveData(`log_${log.id}`);
             if (!localLog) {
                 await storeData(`log_${log.id}`, JSON.stringify(log));
+
+                if (log.id >= localLogCount) {
+                    await storeData('log_count', (log.id + 1).toString());
+                }
             }
         }
 
@@ -88,23 +94,10 @@ const Logs = () => {
         setLogs(loaded_logs);
     }
 
-    const addNewLog = async () => {
-        const logCountRaw = await retrieveData('log_count');
-        let log_count = Number(logCountRaw) || 0;
-        const today = new Date();
-        today.setDate(today.getDate() - 1);
-        
-        const new_log = {
-            id: log_count,
-            text: "",
-            date: today
-        };
-
-        await storeData(`log_${log_count}`, JSON.stringify(new_log));
-        log_count++;
-        await storeData('log_count', log_count.toString());
-        
-        openLog(new_log.id.toString());
+    const addNewLog = () => {
+        router.push({
+            pathname: "/log-edit"
+        });
     }
 
     const openLog = (logId: string) => {
@@ -132,7 +125,6 @@ const Logs = () => {
             <View style={styles.container2} >
                 <FlatList
                     data={logs}
-                    // Fix: Use the actual item ID instead of the array index
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({item}) => (
                         <ListButton item={item} onPress={() => openLog(item.id.toString())}/>

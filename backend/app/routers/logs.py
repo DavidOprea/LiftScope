@@ -12,7 +12,7 @@ from typing import List, Optional
 class LogEntry(BaseModel):
     id: int
     text: str 
-    date: str 
+    title: str 
 
 class SyncRequest(BaseModel):
     logs: Optional[List[LogEntry]] = []
@@ -28,16 +28,16 @@ async def sync_logs(request: SyncRequest):
         with engine.begin() as db:
             db.execute(
                 text('''
-                     INSERT INTO logs (log_id, user_id, text, date) 
-                     VALUES (:id, :user_id, :text, :date)
+                     INSERT INTO logs (log_id, user_id, text, title) 
+                     VALUES (:id, :user_id, :text, :title)
                      ON CONFLICT (log_id, user_id) DO UPDATE
-                     SET text = EXCLUDED.text, date = EXCLUDED.date
+                     SET text = EXCLUDED.text, title = EXCLUDED.title
                      '''),
                 {
                     "id": log.id,
                     "user_id": request.userId,
                     "text": log.text,
-                    "date": log.date,
+                    "title": log.title
                 }
             )
 
@@ -47,9 +47,9 @@ async def sync_logs(request: SyncRequest):
 async def get_logs(userId: str):
     with engine.begin() as db:
         rows = db.execute(
-            text("SELECT log_id, text, date FROM logs WHERE user_id = :user_id"), 
+            text("SELECT log_id, text, title FROM logs WHERE user_id = :user_id"), 
             {"user_id": userId})
-        logs = [LogEntry(id=row.log_id, text=row.text, date=str(row.date)) for row in rows]
+        logs = [LogEntry(id=row.log_id, text=row.text, title=row.title) for row in rows]
         print(f"Fetched {len(logs)} logs for user {userId} from database.")
         return {"logs": logs}
 

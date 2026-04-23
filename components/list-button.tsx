@@ -1,10 +1,10 @@
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 type itemJSON = {
   id: number;
   text: string;
-  date: Date;
+  title: string;
 };
 
 type Props = {
@@ -19,7 +19,7 @@ export default function ListButton({ item, onPress } : Props) {
         colors={['#ffffff', '#888888', '#000000']}
         style={styles.listContainer}
       >
-        <Text style={[styles.listText, styles.text]} numberOfLines={1}>{`Log ${item.id}: ${item.date.toLocaleDateString()}`}</Text>
+        <Text style={[styles.listText, styles.text]} numberOfLines={1}>{`${item.title}`}</Text>
       </LinearGradient>
     </TouchableOpacity>
   );

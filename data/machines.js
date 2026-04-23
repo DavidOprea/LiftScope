@@ -27,7 +27,7 @@ export const MACHINES = [
     name: "Assisted Pull Up",
     muscle_groups: ["Back", "Biceps"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1774986097/assisted_pull_up_bnshzo.mp4",
-    video_transcript: "When you're using the assist P machine the first thing you need to be aware of is that unlike every other resistance machine the more weight you put on the easier machine will be so we're going to start off right the weight at the bottom if that is too easy for you you can always move it up to make it that a little bit harder now bring yourself up onto the feet platforms one hand on either the top or the bottom rail bring one knee onto the knee pad and let it lower down at this point you can step both knees on and pull yourself up you want to make sure all the way through the movement we're keeping it nice controlled up and down and also Contracting our back squeezing those lats in and keeping those elbows nice and tight into our backs to step off the machine you want to slowly bring yourself up to the top once again take one leg off onto that foot platform again bring that other knee off and take a step down.",
+    video_transcript: "When you're using the assisted pull up machine the first thing you need to be aware of is that unlike every other resistance machine the more weight you put on the easier machine will be. So we're going to start off right the weight at the bottom. If that is too easy for you you can always move it up to make it that a little bit harder. Now bring yourself up onto the feet platforms one hand on either the top or the bottom rail, bring one knee onto the knee pad, and let it lower down at this point you can step both knees on and pull yourself up. You want to make sure all the way through the movement we're keeping it nice controlled up and down and also contracting our back, squeezing those lats in, and keeping those elbows nice and tight into our backs. To step off the machine you want to slowly bring yourself up to the top once again take one leg off onto that foot platform. Again bring that other knee off and take a step down.",
     description: "This machine has two adjustable pulleys. With these pulleys you can perform a variety of exercises depending on the height and angle you set the pulleys at."
   },
   {
@@ -35,7 +35,7 @@ export const MACHINES = [
     name: "BENCH PRESS",
     muscle_groups: ["Chest", "Triceps", "Shoulders"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577074/bench_press_vfzqkf.mp4",
-    video_transcript: "The bench press is a great exercise to build your upper body but only if you do it right step one to find your ideal grip width lay on the bench pull your elbows back to 90° then tuck them in until your thumbs line up with your nipples the space between your hands is how wide you should grip the bar step two stabilize Your Body by pushing your feet down with your quads and driving your knees out with your glutes bring your armpits down to your hips to activate your lats and finally extend your chest up to create a slight arch in your upper back step three stay tight and push the bar up off the rack then pull the bar over your shoulders re-engage your lats by thinking about bending the bar in half step four pull the bar down towards your lower chest while tucking your elbows in towards your sides think Arrow shape instead of t-shape step five pause for half a second on your chest and then push the bar up and back until your arms are straight over your shoulders congrats you've just done the perfect bench press.",
+    video_transcript: "The bench press is a great exercise to build your upper body, but only if you do it right. Step one: to find your ideal grip width lay on the bench pull your elbows back to 90° then tuck them in until your thumbs line up with your nipples. The space between your hands is how wide you should grip the bar. Step two: stabilize your body by pushing your feet down with your quads and driving your knees out with your glutes, bring your armpits down to your hips to activate your lats, and finally extend your chest up to create a slight arch in your upper back. Step three: stay tight and push the bar up off the rack then pull the bar over your shoulders, re-engage your lats by thinking about bending the bar in half. Step four: pull the bar down towards your lower chest while tucking your elbows in towards your sides. Think arrow shape instead of t-shape. Step five: pause for half a second on your chest and then push the bar up and back until your arms are straight over your shoulders. Congrats you've just done the perfect bench press.",
     description: "Lie on the bench with feet flat on the floor. Grip the barbell slightly wider than shoulder-width. Lower the bar to your chest, then press it back up."
   },
   {
@@ -43,14 +43,15 @@ export const MACHINES = [
     name: "CABLE MACHINE",
     muscle_groups: ["Chest", "Back", "Shoulders", "Arms"],
     image_loc: require("../assets/images/cable_crossover.jpg"),
-    description: "Sit and grip the handles at chest level. Press forward until arms are extended, keeping your back flat against the pad. Slowly return to start."
+    recommended_exercises: ["- Bayesian Bicep Curls", "- Cable Crossover", "- Cable Lateral Raise", "- Cable Tricep Pushdown"],
+    description: "The cable machine is a versatile piece of equipment that allows you to perform a wide range of exercises targeting various muscle groups."
   },
   {
     id: "Hack Squat Machine",
     name: "HACK SQUAT",
     muscle_groups: ["Quads", "Hamstrings", "Glutes"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577563/hack_squat_gglzrt.mp4",
-    video_transcript: "Place the back of your torso against the back pad of the machine and hook your shoulders under the shoulder pads provided position your legs in the platform using a shoulder width medium stance with the toes slightly pointed out place your arms on the side handles of the machine and disengage the safety bars which on most designs is done by moving the side handles from a facing front position to a diagonal position now straighten your legs without locking the knees this will be your starting position begin to slowly lower the unit by bending the knees as you maintain a straight posture with the head up and back on the pad at all times continue down until the angle between the upper leg and the calves becomes slightly less than 90° which is the point in which the upper legs are below parallel to the floor inhale as you perform this portion of the movement begin to raise the unit as you Exhale by pushing the floor mainly with the heel of your foot as you straighten the legs again and go back to the starting position repeat for the recommended amount of repetitions.",
+    video_transcript: "Place the back of your torso against the back pad of the machine and hook your shoulders under the shoulder pads provided. Position your legs in the platform using a shoulder width medium stance with the toes slightly pointed out. Place your arms on the side handles of the machine and disengage the safety bars, which on most designs is done by moving the side handles from a facing front position to a diagonal position. Now straighten your legs without locking the knees, this will be your starting position. Begin to slowly lower the unit by bending the knees as you maintain a straight posture with the head up and back on the pad at all times. Continue down until the angle between the upper leg and the calves becomes slightly less than 90°, which is the point in which the upper legs are below parallel to the floor. Inhale as you perform this portion of the movement. Begin to raise the unit as you exhale by pushing the floor mainly with the heel of your foot as you straighten the legs again and go back to the starting position. Repeat for the recommended amount of repetitions.",
     description: "Stand on the platform with shoulders under the pads. Lower your body by bending your knees until thighs are parallel to the platform, then press back up."
   },
   {
@@ -66,7 +67,7 @@ export const MACHINES = [
     name: "LAT PULLDOWN",
     muscle_groups: ["Lats", "Back", "Biceps"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1771968213/cable_lat_pulldown_ij50xe.mp4",
-    video_transcript: "How to use the lab pull down machine. Adjust the seat height so the thigh pads sit snugly on your thighs to prevent you from lifting up during the movement. Stand up slightly to reach the handles with an overhand grip. Sit back down holding on to the handles and secure your thighs under the pad. Sit tall with a slight lean back and pull the handles down towards your upper chest, focusing on squeezing your shoulder blades down and together. Then let the handles rise back up to return to the starting position. For beginners, use a weight where you can complete three sets of 10 reps.",
+    video_transcript: "How to use the lat pulldown machine. Adjust the seat height so the thigh pads sit snugly on your thighs to prevent you from lifting up during the movement. Stand up slightly to reach the handles with an overhand grip. Sit back down holding on to the handles and secure your thighs under the pad. Sit tall with a slight lean back and pull the handles down towards your upper chest, focusing on squeezing your shoulder blades down and together. Then let the handles rise back up to return to the starting position. For beginners, use a weight where you can complete three sets of 10 reps.",
     description: "Seated machine with thigh pads. Pull the bar down to your collarbone, squeezing your shoulder blades together."
   },
   {
@@ -82,7 +83,7 @@ export const MACHINES = [
     name: "TRICEPS EXTENSION",
     muscle_groups: ["Triceps"],
     video_loc: "https://res.cloudinary.com/ddhy8iyig/video/upload/v1772577826/tricep_extension_fg2kua.mp4",
-    video_transcript: "the tricep machine extension is an isolation exercise used to target the muscles of the triceps the triceps are involved in nearly every push movement so strengthening the triceps is important if you want to continue to make gains on the bench press and military press you're going to set up this exercise in a seated position with your hands and a neutral grip on the handles you're going to then exhale and press the handles outward by extending the elbows slowly lower the handles back to the starting position and repeat for the desired number of repetitions.",
+    video_transcript: "The tricep machine extension is an isolation exercise used to target the muscles of the triceps. The triceps are involved in nearly every push movement so strengthening the triceps is important if you want to continue to make gains on the bench press and military press. You're going to set up this exercise in a seated position with your hands and a neutral grip on the handles. You're going to then exhale and press the handles outward by extending the elbows. Slowly lower the handles back to the starting position and repeat for the desired number of repetitions.",
     description: "Sit with back against pad and grip handles above your head. Extend your arms upward until they are straight, then slowly return to the starting position."
   },
   {
@@ -90,6 +91,7 @@ export const MACHINES = [
     name: "SMITH MACHINE",
     muscle_groups: ["Chest", "Arms", "Legs"],
     image_loc: require("../assets/images/smith_machine.png"),
+    recommended_exercises: ["- Smith Machine Squats", "- Smith Machine Bench Press", "- Smith Machine Shoulder Press"],
     description: "The Smith Machine is a versatile piece of equipment that allows you to perform a variety of exercises such as squats, bench presses, and shoulder presses. The barbell is fixed within steel rails, providing stability and safety during your workout."
   },
   {

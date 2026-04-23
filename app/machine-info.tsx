@@ -38,7 +38,7 @@ const MachineInfo = () => {
           showsVerticalScrollIndicator={false}
         >
           <Text style={[styles.title, styles.text]}>{machine?.name}</Text>
-          <Text style={[styles.description, styles.text]}>{machine?.description}</Text>
+          <Text style={[styles.description, styles.descriptionSize, styles.text]}>{machine?.description}</Text>
           {videoSource && <VideoView
             player={player}
             style={styles.video}
@@ -64,11 +64,21 @@ const MachineInfo = () => {
                 }
                 textStyle={{textAlign: 'center'}}
               >
-              <Text style={[styles.text, styles.description]}>
+              <Text style={[styles.text, styles.description, styles.transcriptSize]}>
                 {machine?.video_transcript || "No transcript available."}
               </Text>
             </ViewMoreText> 
           </View>}
+          {imageSource && machine?.recommended_exercises &&
+            <View style={styles.description}>
+              <Text style={[styles.text, styles.header]}>
+                {"Recommended Exercises:"}
+              </Text>
+              <Text style={[styles.text, styles.transcriptSize]}>
+                {machine?.recommended_exercises?.join("\n")}
+              </Text>
+            </View>
+          }
           <View style={[styles.container, styles.listContainer]}>
             <Text style={[styles.header, styles.text]}>Muscle Groups</Text>
             <FlatList
@@ -107,7 +117,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: 500,
-    marginBottom: 10
+    marginBottom: 10,
   },
   title: {
     fontSize: 25,
@@ -121,19 +131,24 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline"
   },
   description: {
-    fontSize: 20,
-    fontWeight: 600,
     backgroundColor: "#8d8d8d",
     borderRadius: 10,
     borderWidth: 3,
-    color: "#ffffff",
     padding: 10,
     width: '95%'
+  },
+  descriptionSize: {
+    fontSize: 20,
+    fontWeight: 600,
+  },
+  transcriptSize: {
+    fontSize: 16,
+    fontWeight: 400,
+    lineHeight: 22,
   },
   transcriptButton: {
     fontSize: 18,
     fontWeight: 400,
-    color: "#ffffff",
     textDecorationLine: "underline",
     alignSelf: "center"
   },
