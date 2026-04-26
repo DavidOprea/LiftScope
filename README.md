@@ -1,50 +1,63 @@
-# Welcome to your Expo app 👋
+# LiftScope 🏋️‍♂️
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+LiftScope is a React Native mobile app designed to help gym-goers instantly identify gym machines, access tutorial videos and transcripts, and log their daily workouts. 
 
-## Get started
+## Features
+- **Smart Machine Identification:** Point your camera at any gym machine to instantly identify it. Uses a custom on-device TensorFlow Lite model for offline speed, with a cloud PyTorch fallback for high accuracy.
+  - ***Note on Model Scope🔎:** The current ML model is specifically trained and optimized for the equipment found at Purdue University gyms. Because different manufacturers build similar-looking machines for completely different exercises, generalizing the model across all global gym brands currently causes a decent drop in accuracy.*
+- **Daily Streaks:** Stay motivated! The app automatically tracks your gym streak when you successfully scan a machine each day.
+- **Workout Logging:** Write, edit, and save daily workout logs. Logs are synced seamlessly between local device storage and a cloud PostgreSQL database.
+- **Machine Info:** View detailed information about recognized machines, including target muscle groups, recommended exercises, and video transcripts.
 
-1. Install dependencies
+## Tech Stack
+- **Frontend:** React Native, Expo, Expo Router
+- **Machine Learning (On-Device):** `react-native-fast-tflite`
+- **Backend/API:** Python, FastAPI, SQLAlchemy
+- **Database:** PostgreSQL (Hosted on Render)
+- **Deployment:** Render (Backend), EAS (Mobile Build)
 
-   ```bash
-   npm install
-   ```
+## Running the App Locally
 
-2. Start the app
+### 1. Prerequisites
+- Node.js and npm installed
+- Python 3.11+ (for the backend server)
+- Expo CLI
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 2. Mobile App Setup
+Clone the repository and install the frontend dependencies:
 ```bash
-npm run reset-project
+git clone [https://github.com/DavidOprea/LiftScope/main](https://github.com/DavidOprea/LiftScope/main)
+cd LiftScope
+npm install
+```
+Start the expo development server:
+```bash
+npx expo start
+```
+#### ⚠️ **Important Camera & OS Limitations:**
+- **Developer Build Required:** Because this app uses custom native machine learning modules (react-native-fast-tflite), the camera will not work in the standard Expo Go app. You must create a custom development build (e.g., npx expo run:android).
+- **Windows Developers:** If you are developing on a Windows machine, you cannot compile the iOS version of this app locally. You will need a physical Android device plugged into your computer (or an Android emulator with webcam passthrough configured) to test the camera functionality.
+
+### 3. Backend Setup (Optional for local testing)
+
+If you want to run the FastAPI server locally instead of relying on the Render cloud URL:
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Create a .env file in the backend directory and add your database URL:
+```bash
+DATABASE_URL=postgresql://user:password@localhost/liftscope
+```
 
-## Learn more
+Start the Uvicorn server:
+```bash
+uvicorn app.api:app --reload --host 0.0.0.0 --port 8000
+```
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 4. Branch notes
+- `main` = this branch (React Native mobile app)
+- `machine-learning-model` = Google Colab for creating the machine learning model
